@@ -1,3 +1,5 @@
+
+
 struct tofs
 {
   int l_90, l_45, l_0, r_0, r_45, r_90;
