@@ -3,6 +3,8 @@
 #include <Math.h>
 #include <SPI.h>
 
+#include "TOF.h"
+
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
 #define OLED_ADDR   0x3C
@@ -17,31 +19,31 @@
 
 #define ENCODER_PORT PIN_PC0
 
-
+VL53L0X tof_0, tof_1, tof_2, tof_3, tof_4, tof_5;
 Servo servo, motor;  // создадим объект сервопривода и мотора
 Adafruit_SSD1306 display(128, 32, &Wire, OLED_RESET);
 
 
 
 double spos = 0;
-int l_0 = 0;
-int r_0 = 0;
-int l_45 = 0;
-int r_45 = 0;
-int l_90 = 0;
-int r_90 = 0;
+int s.l_0 = 0;
+int s.r_0 = 0;
+int s.l_45 = 0;
+int s.r_45 = 0;
+int s.l_90 = 0;
+int s.r_90 = 0;
 int tofs[6];
 long c = 0;
 int f = 0;
 int err_45 = 0;
 int err_90 = 0;
-int err_0 = 0;
+int ers.r_0 = 0;
 int err_d = 0;
 int encoder = 0;
 double sp = 0;
-double t_sp = 22;
-double f_sp = 25;
-double f_f_sp = 45;
+double t_sp = 24;
+double f_sp = 28;
+double f_f_sp = 36;
 
 
 
@@ -128,42 +130,42 @@ int err_sp = 0;
 double z = 0;
 void speed_control()
 {
-  
+
   //integral_sp = 0.5*integral_sp+ki_sp*(sp - rpm);
-  err_sp = (kp_sp*(sp - rpm) + kd_sp*(sp - rpm - errold_sp));  
+  err_sp = (kp_sp * (sp - rpm) + kd_sp * (sp - rpm - errold_sp));
   errold_sp = (sp - rpm);
 
-  
+
   if (rpm < 4)
     motor.write(102);
   else
+  {
+    if (err_sp < 0)
     {
-      if(err_sp < 0)
-      {
-        z = NEUTRAL + err_sp/1; //(err_sp * (NEUTRAL-REVERSE) / ((f_sp-t_sp)*kp_sp + (f_sp-t_sp)*kd_sp));
-        if (z<REVERSE)
-          motor.write(REVERSE);
-       else
-          motor.write(z);
-      }
+      z = NEUTRAL + err_sp / 1; //(err_sp * (NEUTRAL-REVERSE) / ((f_sp-t_sp)*kp_sp + (f_sp-t_sp)*kd_sp));
+      if (z < REVERSE || rpm > f_f_sp - 15 )
+        motor.write(REVERSE);
       else
-      {
-        z = 100 + err_sp/6;//((err_sp *5)/(f_sp*kp_sp + f_sp*kd_sp));
-        if(z > 108)
-          motor.write(108);
-        else
-          motor.write(z);
-      }
-        
+        motor.write(z);
     }
-  
+    else
+    {
+      z = 100 + err_sp / 6; //((err_sp *5)/(f_sp*kp_sp + f_sp*kd_sp));
+      if (z > 108)
+        motor.write(108);
+      else
+        motor.write(z);
+    }
+
+  }
+
 
   if (rpm < 2) {
     tt_stop++;
   }
   else
   {
-    if (l_0 < 120 && l_0 > 10 || r_0 < 120 && r_0 > 10)
+    if (s.l_0 < 120 && s.l_0 > 10 || s.r_0 < 120 && s.r_0 > 10)
       tt_stop += 6;
     else
       tt_stop = 0;
@@ -171,23 +173,20 @@ void speed_control()
 }
 
 
-
-
-
 void serial_print()
 {
   Serial.print(" ");
-  Serial.print(l_90);
+  Serial.print(s.l_90);
   Serial.print(" ");
-  Serial.print(l_45);
+  Serial.print(s.l_45);
   Serial.print(" ");
-  Serial.print(l_0);
+  Serial.print(s.l_0);
   Serial.print(" ");
-  Serial.print(r_0);
+  Serial.print(s.r_0);
   Serial.print(" ");
-  Serial.print(r_45);
+  Serial.print(s.r_45);
   Serial.print(" ");
-  Serial.print(r_90);
+  Serial.print(s.r_90);
   Serial.print(" ");
   Serial.print(rpm);
   Serial.print(" ");
@@ -200,17 +199,17 @@ void display_print()
   //display.setTextColor(SSD1306_WHITE);
   display.clearDisplay();
   display.setCursor(0, 23);
-  display.print(l_90);
+  display.print(s.l_90);
   display.setCursor(103, 23);
-  display.print(r_90);
+  display.print(s.r_90);
   display.setCursor(10, 10);
-  display.print(l_45);
+  display.print(s.l_45);
   display.setCursor(100, 10);
-  display.print(r_45);
+  display.print(s.r_45);
   display.setCursor(45, 0);
-  display.print(l_0);
+  display.print(s.l_0);
   display.setCursor(70, 0);
-  display.print(r_0);
+  display.print(s.r_0);
   display.display();
 }
 
@@ -219,22 +218,21 @@ int stop_time = 0;
 int razvorot = 0;
 double kp = 0.011;
 double kd = 0.7;
+tofs s;
 //------------------------------------------------------------------------------------------------------------------------
 
-
-err_45 = r_45 - l_45;
-  err_90 = r_90 - l_90;
-  err_0 = (r_0 - l_0)/10;
-  
 void loop() {
 
   s_pos(0);
   delay(3000);
+  
 
 
   while (1) {
     velocity_count();
-    tof_read();
+    s = tof_read();
+    err_45 = s.r_45 - s.l_45;
+    err_90 = s.r_90 - s.l_90; 
     speed_control();
     //serial_print();
     //display_print();
@@ -252,7 +250,7 @@ void loop() {
       delay(50);
       motor.write(REVERSE + 5);
       delay(1000);
-      //while(l_0 < 210 || r_0 < 210)
+      //while(s.l_0 < 210 || s.r_0 < 210)
       motor.write(NEUTRAL);
       tt_stop = -300;
       razvorot = 0;
@@ -262,7 +260,7 @@ void loop() {
     //------------------------------
 
     if (tt_stop > 900) {
-      s_pos(S0-spos);
+      s_pos(S0 - spos);
       motor.write(NEUTRAL);
       delay(50);
       motor.write(REVERSE);
@@ -271,32 +269,32 @@ void loop() {
       delay(50);
       motor.write(REVERSE + 5);
       delay(700);
-      //while(l_0 < 210 || r_0 < 210)
+      //while(s.l_0 < 210 || s.r_0 < 210)
       motor.write(NEUTRAL);
       tt_stop = -300;
     }
     else {
 
 
-      if ((r_0+l_0)/2 > 1650)
+      if ((s.r_0 + s.l_0) / 2 > 1750)
       { // super fast
         sp = f_f_sp;
-        s_pos(-(err_45+err_90)*kp -(err_45+err_90-err_d)*kd);
-        err_d = err_45+err_90;
+        s_pos(-(err_45 + err_90)*kp - (err_45 + err_90 - err_d)*kd);
+        err_d = err_45 + err_90;
       }
-      else if ((r_0 > 1300 || l_0 > 1300) && (l_90 > 150 && r_90 > 150) && (l_45 > 160 && r_45 > 160) ) {
+      else if ((s.r_0 > 1300 || s.l_0 > 1300) && (s.l_90 > 150 && s.r_90 > 150) && (s.l_45 > 160 && s.r_45 > 160) ) {
         //forward
-          sp = f_sp;
-          s_pos(-(err_45+err_90)*kp -(err_45+err_90-err_d)*kd);
-          err_d = err_45+err_90;
-      } else if (l_90 > 950) {
+        sp = f_sp;
+        s_pos(-(err_45 + err_90)*kp - (err_45 + err_90 - err_d)*kd);
+        err_d = err_45 + err_90;
+      } else if (s.l_90 > 950) {
         // поворачиваем
         //left
         s_pos(30);
         sp = t_sp;
         razvorot--;
       }
-      else if (r_90 > 950) {
+      else if (s.r_90 > 950) {
         //right
         s_pos(-30);
         sp = t_sp;
@@ -306,7 +304,7 @@ void loop() {
         //turn
         sp = t_sp;
 
-        if (r_90 > 950) {
+        if (s.r_90 > 950) {
           //right
           s_pos(-30);
           sp = t_sp;
@@ -314,18 +312,18 @@ void loop() {
         }
 
         else {
-          if (l_90 > 950) {
+          if (s.l_90 > 950) {
             //left
             s_pos(30);
             sp = t_sp;
             razvorot--;
 
-          }     else if (r_45 > 1000) {
+          }     else if (s.r_45 > 1000) {
             // light right
             s_pos(-20);
             sp = f_sp;
             razvorot++;
-          } else if (l_45 > 1000) {
+          } else if (s.l_45 > 1000) {
             //light left
             s_pos(20);
             sp = f_sp;
