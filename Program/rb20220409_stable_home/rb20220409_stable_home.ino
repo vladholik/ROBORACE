@@ -5,7 +5,6 @@
 #include <SPI.h>
 
 #include <Adafruit_SSD1306.h>
-
 #include <Adafruit_GFX.h>
 #define OLED_ADDR   0x3C
 #define OLED_RESET  -1        // no reset pin
@@ -76,7 +75,7 @@ bool setup_6_tofs(int timeout) {
   tof_2.setTimeout(timeout);
   tof_2.startContinuous();
 
-  TCA9548A(4);
+  TCA9548A(3);
   if (tof_3.init() == 0) {
     Serial.println("Не удалось обнаружить и инициализировать tof-модуль 3!");
     return 0;
@@ -87,7 +86,7 @@ bool setup_6_tofs(int timeout) {
   tof_3.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange, 14);
   tof_3.startContinuous();
 
-  TCA9548A(3);
+  TCA9548A(4);
   if (tof_4.init() == 0) {
     Serial.println("Не удалось обнаружить и инициализировать tof-модуль 4!");
     return 0;
@@ -217,9 +216,9 @@ void speed_control()
       }
       else
       {
-        z = 100 + err_sp/7;//((err_sp *5)/(f_sp*kp_sp + f_sp*kd_sp));
-        if(z > 105)
-          motor.write(105);
+        z = 100 + err_sp/6;//((err_sp *5)/(f_sp*kp_sp + f_sp*kd_sp));
+        if(z > 108)
+          motor.write(108);
         else
           motor.write(z);
       }
@@ -227,7 +226,7 @@ void speed_control()
     }
   
 
-  if (rpm < 3) {
+  if (rpm < 2) {
     tt_stop++;
   }
   else
@@ -268,7 +267,7 @@ void tof_read() {
       r_45 = 1200;
   }
 
-  TCA9548A(3);
+  TCA9548A(4);
   if (0 != (tof_3.readReg(RESULT_INTERRUPT_STATUS) & 0x07)) {
     l_0 = tof_3.readReg16Bit(RESULT_RANGE_STATUS + 10);
     tof_3.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
@@ -276,7 +275,7 @@ void tof_read() {
       l_0 = 2200;
   }
 
-  TCA9548A(4);
+  TCA9548A(3);
   if (0 != (tof_4.readReg(RESULT_INTERRUPT_STATUS) & 0x07)) {
     l_90 = tof_4.readReg16Bit(RESULT_RANGE_STATUS + 10);
     tof_4.writeReg(SYSTEM_INTERRUPT_CLEAR, 0x01);
@@ -358,10 +357,10 @@ void loop() {
     //serial_print();
     //display_print();
 
-    if (razvorot > 50)
+    if (razvorot > 70)
       razvorot = 0;
 
-    if (razvorot < -300) {
+    if (razvorot < -450) {
       s_pos(-30);
       motor.write(NEUTRAL);
       delay(50);
@@ -403,14 +402,14 @@ void loop() {
       if ((r_0+l_0)/2 > 1750)
       { // super fast
         sp = f_f_sp;
-        s_pos(-(err_45+err_90+err_0)*kp -(err_0+err_45+err_90-err_d)*kd);
-        err_d = err_45+err_90+err_0;
+        s_pos(-(err_45+err_90)*kp -(err_45+err_90-err_d)*kd);
+        err_d = err_45+err_90;
       }
-      else if ((r_0 > 1100 || l_0 > 1100) && (l_90 > 150 && r_90 > 150) && (l_45 > 160 && r_45 > 160) && (r_90 < 950) && (l_90 < 950)) {
+      else if ((r_0 > 1300 || l_0 > 1300) && (l_90 > 150 && r_90 > 150) && (l_45 > 160 && r_45 > 160) ) {
         //forward
           sp = f_sp;
-          s_pos(-(err_45+err_90+err_0)*kp -(err_0+err_45+err_90-err_d)*kd);
-          err_d = err_45+err_90+err_0;
+          s_pos(-(err_45+err_90)*kp -(err_45+err_90-err_d)*kd);
+          err_d = err_45+err_90;
       } else if (l_90 > 950) {
         // поворачиваем
         //left
@@ -418,7 +417,7 @@ void loop() {
         sp = t_sp;
         razvorot--;
       }
-      else if (r_90 > 850) {
+      else if (r_90 > 950) {
         //right
         s_pos(-30);
         sp = t_sp;
@@ -428,7 +427,7 @@ void loop() {
         //turn
         sp = t_sp;
 
-        if (r_90 > 850) {
+        if (r_90 > 950) {
           //right
           s_pos(-30);
           sp = t_sp;

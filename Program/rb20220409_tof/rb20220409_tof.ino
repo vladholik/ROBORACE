@@ -42,8 +42,8 @@ int err_d = 0;
 int encoder = 0;
 double sp = 0;
 double t_sp = 24;
-double f_sp = 28;
-double f_f_sp = 36;
+double f_sp = 30;
+double f_f_sp = 38;
 
 
 bool setup_6_tofs(int timeout) {
@@ -209,11 +209,11 @@ void speed_control()
     {
       if(err_sp < 0)
       {
-        z = NEUTRAL + err_sp/1; //(err_sp * (NEUTRAL-REVERSE) / ((f_sp-t_sp)*kp_sp + (f_sp-t_sp)*kd_sp));
-        if (z<REVERSE || rpm > f_f_sp-15 )
+        z = NEUTRAL + err_sp/0.9; //(err_sp * (NEUTRAL-REVERSE) / ((f_sp-t_sp)*kp_sp + (f_sp-t_sp)*kd_sp));
+        if (z<REVERSE || rpm > f_f_sp-20 )
           motor.write(REVERSE);
        else
-          motor.write(z);
+          motor.write(REVERSE);
       }
       else
       {
@@ -342,7 +342,7 @@ void display_print()
 int stop_time = 0;
 int razvorot = 0;
 double kp = 0.011;
-double kd = 0.7;
+double kd = 0.71;
 //------------------------------------------------------------------------------------------------------------------------
 
 void loop() {
@@ -358,10 +358,10 @@ void loop() {
     //serial_print();
     //display_print();
 
-    if (razvorot > 50)
+    if (razvorot > 40 || rpm < 6)
       razvorot = 0;
 
-    if (razvorot < -300) {
+    if (razvorot < -220) {
       s_pos(-30);
       motor.write(NEUTRAL);
       delay(50);
@@ -400,13 +400,13 @@ void loop() {
     else {
 
 
-      if ((r_0+l_0)/2 > 1750)
+      if ((r_0+l_0)/2 > 2100)
       { // super fast
         sp = f_f_sp;
         s_pos(-(err_45+err_90+err_0)*kp -(err_0+err_45+err_90-err_d)*kd);
         err_d = err_45+err_90+err_0;
       }
-      else if ((r_0 > 1100 || l_0 > 1100) && (l_90 > 150 && r_90 > 150) && (l_45 > 160 && r_45 > 160) && (r_90 < 950) && (l_90 < 950)) {
+      else if ((r_0 > 1100 || l_0 > 1100) && (r_90 < 900) && (l_90 < 900)) {
         //forward
           sp = f_sp;
           s_pos(-(err_45+err_90+err_0)*kp -(err_0+err_45+err_90-err_d)*kd);
