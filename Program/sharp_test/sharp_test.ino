@@ -26,15 +26,12 @@
 #define INTEGRAL_DATA_2 PIN_PB0
 #define INTEGRAL_DATA_1 PIN_PB1
 
-int l_0 = 0;
-int r_0 = 0;
-int l_45 = 0;
-int r_45 = 0;
-int l_90 = 0;
-int r_90 = 0;
-
-
-
+double l_0 = 0;
+double r_0 = 0;
+double l_45 = 0;
+double r_45 = 0;
+double l_90 = 0;
+double r_90 = 0;
 
 
 int sh_to_mm(int port, double analog_data)
@@ -46,12 +43,7 @@ int sh_to_mm(int port, double analog_data)
   switch (port)
   {
     case 1:
-      i = 0;
-
-      while (analog_data > sharp_analog_l_45[i])
-        i++;
-      tga = (sharp_analog_l_45[i + 1] - sharp_analog_l_45[i]) / (sharp_mm[i] - sharp_mm[i + 1]);
-      l_45 = ((analog_data - sharp_analog_l_45[i]) / tga + sharp_mm[i]) * 10 ;
+      l_45 = 75834 * pow(analog_data, -1.341)* 10;
       if (l_45 > 1400)
         l_45 = 1400;
       if (l_45 < 110)
@@ -59,12 +51,7 @@ int sh_to_mm(int port, double analog_data)
       break;
 
     case 0:
-      i = 0;
-      ANALOG_MUX(3);
-      while (analog_data > sharp_analog_l_90[i])
-        i++;
-      tga = (sharp_analog_l_90[i + 1] - sharp_analog_l_90[i]) / (sharp_mm[i] - sharp_mm[i + 1]);
-      l_0 = ((analog_data - sharp_analog_l_90[i]) / tga + sharp_mm[i]) * 10 ;
+    l_90 = 75834 * pow(analog_data, -1.341)* 10;
       if (l_90 > 1400)
         l_90 = 1400;
       if (l_90 < 110)
@@ -72,11 +59,7 @@ int sh_to_mm(int port, double analog_data)
       break;
 
     case 2:
-      i = 0;
-      while (analog_data > sharp_analog_l_0[i])
-        i++;
-      tga = (sharp_analog_l_0[i + 1] - sharp_analog_l_0[i]) / (sharp_mm[i] - sharp_mm[i + 1]);
-      l_0 = ((analog_data - sharp_analog_l_0[i]) / tga + sharp_mm[i]) * 10 ;
+     l_0 = 75834 * pow(analog_data, -1.341)* 10;
       if (l_0 > 1400)
         l_0 = 1400;
       if (l_0 < 110)
@@ -85,11 +68,7 @@ int sh_to_mm(int port, double analog_data)
 
     case 3:
 
-      i = 0;
-      while (analog_data > sharp_analog_r_0[i])
-        i++;
-      tga = (sharp_analog_r_0[i + 1] - sharp_analog_r_0[i]) / (sharp_mm[i] - sharp_mm[i + 1]);
-      r_0 = ((analog_data - sharp_analog_r_0[i]) / tga + sharp_mm[i]) * 10 ;
+      r_0 = 75834 * pow(analog_data, -1.341)* 10;
       if (r_0 > 1400)
         r_0 = 1400;
       if (r_0 < 110)
@@ -97,11 +76,7 @@ int sh_to_mm(int port, double analog_data)
       break;
 
     case 4:
-      i = 0;
-      while (analog_data > sharp_analog_r_45[i])
-        i++;
-      tga = (sharp_analog_r_45[i + 1] - sharp_analog_r_45[i]) / (sharp_mm[i] - sharp_mm[i + 1]);
-      r_45 = ((analog_data - sharp_analog_r_45[i]) / tga + sharp_mm[i]) * 10 ;
+     r_45 = 75834 * pow(analog_data, -1.341)* 10;
       if (r_45 > 1400)
         r_45 = 1400;
       if (r_45 < 110)
@@ -110,11 +85,7 @@ int sh_to_mm(int port, double analog_data)
 
 
     case 5:
-      i = 0;
-      while (analog_data > sharp_analog_r_90[i])
-        i++;
-      tga = (sharp_analog_r_90[i + 1] - sharp_analog_r_90[i]) / (sharp_mm[i] - sharp_mm[i + 1]);
-      r_90 = ((analog_data - sharp_analog_r_90[i]) / tga + sharp_mm[i]) * 10 ;
+      r_90 = 75834 * pow(analog_data, -1.341)* 10;
       if (r_90 > 1400)
         r_90 = 1400;
       if (r_90 < 110)

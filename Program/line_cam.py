@@ -26,7 +26,7 @@ while(True):
             c=img.get_pixel(blob[5], blob[6])
             #print("Х= ", b[5]-160 , "Y= ", b[6]-120)
             angle=(blob[5]-160)*70/320
-            #print("ANGLE= ",angle)
+            print("ANGLE= ",angle)
 
 
     try:

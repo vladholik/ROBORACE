@@ -41,9 +41,9 @@ int err_0 = 0;
 int err_d = 0;
 int encoder = 0;
 double sp = 0;
-double t_sp = 24;
-double f_sp = 30;
-double f_f_sp = 38;
+double t_sp = 20;
+double f_sp = 20;
+double f_f_sp = 20;
 
 
 bool setup_6_tofs(int timeout) {
@@ -232,7 +232,7 @@ void speed_control()
   }
   else
   {
-    if (l_0 < 120 && l_0 > 10 || r_0 < 120 && r_0 > 10)
+    if (l_0 < 200 && l_0 > 2 || r_0 < 200 && r_0 > 2)
       tt_stop += 6;
     else
       tt_stop = 0;
@@ -320,7 +320,7 @@ void serial_print()
 
 void display_print()
 {
-  TCA9548A(5);
+  //TCA9548A(5);
   //display.setTextColor(SSD1306_WHITE);
   display.clearDisplay();
   display.setCursor(0, 23);
@@ -339,12 +339,37 @@ void display_print()
 }
 
 
+int getCamAngle() {
+  TCA9548A(5);
+  static int const CHAR_BUF = 10;
+  int angle = 0;
+  int32_t temp = 0;
+  char buff[CHAR_BUF] = {0};
+
+  Wire.requestFrom(0x12, 2);
+  if (Wire.available() == 2) { // got length?
+    temp = Wire.read() | (Wire.read() << 8);
+    delay(1); // Give some setup time...
+    Wire.requestFrom(0x12, temp);
+    if (Wire.available() == temp) { // got full message?
+      temp = 0;
+      while (Wire.available()) buff[temp++] = Wire.read();
+
+    } else {
+      while (Wire.available()) Wire.read(); // Toss garbage bytes.
+    }
+  } else {
+    while (Wire.available()) Wire.read(); // Toss garbage bytes.
+  }
+  angle = atoi(buff);
+  return angle;
+}
+
 
 int stop_time = 0;
 int razvorot = 0;
-double kp = 0.011;
-double kd = 0.71;
-//------------------------------------------------------------------------------------------------------------------------
+double kp = 0.001;
+double kd = 0.6;
 
 void loop() {
 
@@ -356,35 +381,29 @@ void loop() {
     velocity_count();
     tof_read();
     speed_control();
+    //Serial.println(getCamAngle());
     //serial_print();
     //display_print();
-
-    if (razvorot > 40 || rpm < 6)
-      razvorot = 0;
-
-    if (razvorot < -220) {
-      s_pos(-30);
+    if(getCamAngle() == 2)
+    {
+      s_pos(30);
       motor.write(NEUTRAL);
       delay(50);
       motor.write(REVERSE);
       delay(150);
       motor.write(NEUTRAL);
       delay(50);
-      motor.write(REVERSE + 5);
-      delay(1000);
-      //while(l_0 < 210 || r_0 < 210)
+      motor.write(REVERSE);
+      delay(200);
       motor.write(NEUTRAL);
-      tt_stop = -300;
-      razvorot = 0;
-      s_pos(30);
-      motor.write(102);
       delay(1000);
     }
+      
 
 
     //------------------------------
 
-    if (tt_stop > 900) {
+    if (tt_stop > 12 /*|| l_0 < 120 && l_0 > 10 || r_0 < 120 && r_0 > 10*/) {
       s_pos(S0-spos);
       motor.write(NEUTRAL);
       delay(50);
@@ -399,6 +418,11 @@ void loop() {
       tt_stop = -300;
     }
     else {
+    if (r_90 == 1200 && l_90 == 1200 && r_45 == 1200)
+      s_pos(-3);
+    else{
+    
+    
 
 
       if ((r_0+l_0)/2 > 2100)
@@ -407,7 +431,7 @@ void loop() {
         s_pos(-(err_45+err_90+err_0)*kp -(err_0+err_45+err_90-err_d)*kd);
         err_d = err_45+err_90+err_0;
       }
-      else if ((r_0 > 1100 || l_0 > 1100) && (r_90 < 900) && (l_90 < 900)) {
+      else if ((r_0 > 1000 || l_0 > 1000) && (r_90 < 1100) && (l_90 < 1100)) {
         //forward
           sp = f_sp;
           s_pos(-(err_45+err_90+err_0)*kp -(err_0+err_45+err_90-err_d)*kd);
@@ -415,13 +439,13 @@ void loop() {
       } else if (l_90 > 950) {
         // поворачиваем
         //left
-        s_pos(30);
+        s_pos(20);
         sp = t_sp;
         razvorot--;
       }
       else if (r_90 > 850) {
         //right
-        s_pos(-30);
+        s_pos(-20);
         sp = t_sp;
         razvorot++;
       }
@@ -431,7 +455,7 @@ void loop() {
 
         if (r_90 > 850) {
           //right
-          s_pos(-30);
+          s_pos(-20);
           sp = t_sp;
           razvorot++;
         }
@@ -439,18 +463,18 @@ void loop() {
         else {
           if (l_90 > 950) {
             //left
-            s_pos(30);
+            s_pos(20);
             sp = t_sp;
             razvorot--;
 
           }     else if (r_45 > 1000) {
             // light right
-            s_pos(-20);
+            s_pos(-15);
             sp = f_sp;
             razvorot++;
           } else if (l_45 > 1000) {
             //light left
-            s_pos(20);
+            s_pos(15);
             sp = f_sp;
             //motor.write(NEUTRAL-10);
             razvorot--;
@@ -463,7 +487,7 @@ void loop() {
 
       }
     }
-
+    }
 
 
 

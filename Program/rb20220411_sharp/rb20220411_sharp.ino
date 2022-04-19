@@ -18,6 +18,10 @@
 #define S0 96
 
 #define ENCODER_PORT PIN_PC0
+#define ANALOG_READ_PORT PIN_PC1
+#define INTEGRAL_DATA_3 PIN_PD7
+#define INTEGRAL_DATA_2 PIN_PB0
+#define INTEGRAL_DATA_1 PIN_PB1
 
 VL53L0X tof_0, tof_1, tof_2, tof_3, tof_4, tof_5;
 Servo servo, motor;  // создадим объект сервопривода и мотора
@@ -41,9 +45,9 @@ int err_0 = 0;
 int err_d = 0;
 int encoder = 0;
 double sp = 0;
-double t_sp = 24;
-double f_sp = 30;
-double f_f_sp = 38;
+double t_sp = 20;
+double f_sp = 25;
+double f_f_sp = 30;
 
 
 bool setup_6_tofs(int timeout) {
@@ -115,6 +119,144 @@ void TCA9548A(uint8_t bus)
   Wire.endTransmission();
 }
 
+int sh_to_mm(int port, double analog_data)
+{
+  int i;
+  double tga;
+
+
+  switch (port)
+  {
+    case 1:
+      l_45 = 75834 * pow(analog_data, -1.341)* 10;
+      if (l_45 > 1400)
+        l_45 = 1400;
+      if (l_45 < 110)
+        l_45 = 110;
+      break;
+
+    case 0:
+    l_90 = 75834 * pow(analog_data, -1.341)* 10;
+      if (l_90 > 1400)
+        l_90 = 1400;
+      if (l_90 < 110)
+        l_90 = 110;
+      break;
+
+    case 2:
+     l_0 = 75834 * pow(analog_data, -1.341)* 10;
+      if (l_0 > 1400)
+        l_0 = 1400;
+      if (l_0 < 110)
+        l_0 = 110;
+      break;
+
+    case 3:
+
+      r_0 = 75834 * pow(analog_data, -1.341)* 10;
+      if (r_0 > 1400)
+        r_0 = 1400;
+      if (r_0 < 110)
+        r_0 = 110;
+      break;
+
+    case 4:
+     r_45 = 75834 * pow(analog_data, -1.341)* 10;
+      if (r_45 > 1400)
+        r_45 = 1400;
+      if (r_45 < 110)
+        r_45 = 110;
+      break;
+
+
+    case 5:
+      r_90 = 75834 * pow(analog_data, -1.341)* 10;
+      if (r_90 > 1400)
+        r_90 = 1400;
+      if (r_90 < 110)
+        r_90 = 110;
+      break;
+
+
+  }
+}
+
+void sharp_read()
+{
+  ANALOG_MUX(3);
+  sh_to_mm(0, analogRead(ANALOG_READ_PORT));
+
+  ANALOG_MUX(2);
+  sh_to_mm(1, analogRead(ANALOG_READ_PORT));
+
+  ANALOG_MUX(1);
+  sh_to_mm(2, analogRead(ANALOG_READ_PORT));
+
+  ANALOG_MUX(0);
+  sh_to_mm(3, analogRead(ANALOG_READ_PORT));
+
+  ANALOG_MUX(6);
+  sh_to_mm(4, analogRead(ANALOG_READ_PORT));
+
+  ANALOG_MUX(7);
+  sh_to_mm(5, analogRead(ANALOG_READ_PORT));
+}
+
+void ANALOG_MUX(uint8_t port)
+{
+  switch (port)
+  {
+    case 0:
+      digitalWrite(INTEGRAL_DATA_1, 0);
+      digitalWrite(INTEGRAL_DATA_2, 0);
+      digitalWrite(INTEGRAL_DATA_3, 0);
+      break;
+
+    case 1:
+      digitalWrite(INTEGRAL_DATA_1, 0);
+      digitalWrite(INTEGRAL_DATA_2, 0);
+      digitalWrite(INTEGRAL_DATA_3, 1);
+      break;
+
+    case 2:
+      digitalWrite(INTEGRAL_DATA_1, 0);
+      digitalWrite(INTEGRAL_DATA_2, 1);
+      digitalWrite(INTEGRAL_DATA_3, 0);
+      break;
+
+    case 3:
+      digitalWrite(INTEGRAL_DATA_1, 0);
+      digitalWrite(INTEGRAL_DATA_2, 1);
+      digitalWrite(INTEGRAL_DATA_3, 1);
+      break;
+
+    case 4:
+      digitalWrite(INTEGRAL_DATA_1, 1);
+      digitalWrite(INTEGRAL_DATA_2, 0);
+      digitalWrite(INTEGRAL_DATA_3, 0);
+      break;
+
+    case 5:
+      digitalWrite(INTEGRAL_DATA_1, 1);
+      digitalWrite(INTEGRAL_DATA_2, 0);
+      digitalWrite(INTEGRAL_DATA_3, 1);
+      break;
+
+    case 6:
+      digitalWrite(INTEGRAL_DATA_1, 1);
+      digitalWrite(INTEGRAL_DATA_2, 1);
+      digitalWrite(INTEGRAL_DATA_3, 0);
+      break;
+
+    case 7:
+      digitalWrite(INTEGRAL_DATA_1, 1);
+      digitalWrite(INTEGRAL_DATA_2, 1);
+      digitalWrite(INTEGRAL_DATA_3, 1);
+      break;
+  }
+
+}
+
 void s_pos (double deg)
 {
   // LEFT +
@@ -135,7 +277,10 @@ void setup() {
   servo.attach(PIN_PD4);
   motor.attach(PIN_PB2);
   pinMode(ENCODER_PORT, INPUT);
-
+  pinMode(ANALOG_READ_PORT, INPUT);
+  pinMode(INTEGRAL_DATA_1, OUTPUT);
+  pinMode(INTEGRAL_DATA_2, OUTPUT);
+  pinMode(INTEGRAL_DATA_3, OUTPUT);
 
   if (setup_6_tofs(1000) != 0) {
     while (1) {}
@@ -354,7 +499,8 @@ void loop() {
 
   while (1) {
     velocity_count();
-    tof_read();
+    //tof_read();
+    sharp_read();
     speed_control();
     //serial_print();
     //display_print();
@@ -362,7 +508,7 @@ void loop() {
     if (razvorot > 40 || rpm < 6)
       razvorot = 0;
 
-    if (razvorot < -220) {
+    if (razvorot < -1200) {
       s_pos(-30);
       motor.write(NEUTRAL);
       delay(50);
@@ -401,25 +547,25 @@ void loop() {
     else {
 
 
-      if ((r_0+l_0)/2 > 2100)
+      if ((r_0+l_0)/2 > 1300)
       { // super fast
         sp = f_f_sp;
         s_pos(-(err_45+err_90+err_0)*kp -(err_0+err_45+err_90-err_d)*kd);
         err_d = err_45+err_90+err_0;
       }
-      else if ((r_0 > 1100 || l_0 > 1100) && (r_90 < 900) && (l_90 < 900)) {
+      else if ((r_0 > 1100 || l_0 > 1100) && (r_90 < 1000) && (l_90 < 1000)) {
         //forward
           sp = f_sp;
           s_pos(-(err_45+err_90+err_0)*kp -(err_0+err_45+err_90-err_d)*kd);
           err_d = err_45+err_90+err_0;
-      } else if (l_90 > 950) {
+      } else if (l_90 > 1000) {
         // поворачиваем
         //left
         s_pos(30);
         sp = t_sp;
         razvorot--;
       }
-      else if (r_90 > 850) {
+      else if (r_90 > 1000) {
         //right
         s_pos(-30);
         sp = t_sp;
@@ -429,7 +575,7 @@ void loop() {
         //turn
         sp = t_sp;
 
-        if (r_90 > 850) {
+        if (r_90 > 1000) {
           //right
           s_pos(-30);
           sp = t_sp;
@@ -437,18 +583,18 @@ void loop() {
         }
 
         else {
-          if (l_90 > 950) {
+          if (l_90 > 1000) {
             //left
             s_pos(30);
             sp = t_sp;
             razvorot--;
 
-          }     else if (r_45 > 1000) {
+          }     else if (r_45 > 1100) {
             // light right
             s_pos(-20);
             sp = f_sp;
             razvorot++;
-          } else if (l_45 > 1000) {
+          } else if (l_45 > 1100) {
             //light left
             s_pos(20);
             sp = f_sp;

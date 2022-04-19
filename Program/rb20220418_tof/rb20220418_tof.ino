@@ -17,7 +17,7 @@
 #define REVERSE 63
 #define S0 96
 
-#define ENCODER_PORT PIN_PC0
+#define ENCODER_PORT PIN_PD2
 
 VL53L0X tof_0, tof_1, tof_2, tof_3, tof_4, tof_5;
 Servo servo, motor;  // создадим объект сервопривода и мотора
@@ -41,9 +41,10 @@ int err_0 = 0;
 int err_d = 0;
 int encoder = 0;
 double sp = 0;
-double t_sp = 24;
-double f_sp = 30;
-double f_f_sp = 38;
+double t_sp = 20;
+double f_sp = 22;
+double f_f_sp = 27;
+int razvorot = 0;
 
 
 bool setup_6_tofs(int timeout) {
@@ -135,6 +136,7 @@ void setup() {
   servo.attach(PIN_PD4);
   motor.attach(PIN_PB2);
   pinMode(ENCODER_PORT, INPUT);
+  attachInterrupt(ENCODER_PORT, velocity_count, RISING);
 
 
   if (setup_6_tofs(1000) != 0) {
@@ -149,57 +151,30 @@ unsigned long int tt;
 int magnet = 0;
 int hol = 0;
 
-int velocity_count()
-{
-  hol = analogRead(ENCODER_PORT);
-  if (hol > 640) {
-    magnet = 1;
-    //Serial.println(1);
-  }
-  if (hol < 600)
-    magnet = 0;
-
-  if (millis() - tt > 500)
-    rpm = 0;
-
-  switch (state) {
-
-    case 1:
-      if (magnet == 1) {
-        tt = millis();
-        state = 2;
-      }
-      break;
-
-    case 2:
-      if (magnet == 0)
-        state = 3;
-
-      break;
-
-    case 3:
-      if (magnet == 1) {
-        rpm = 1000.0 / double(millis() - tt);
-        tt = millis();
-        state = 2;
-      }
-      break;
-  }
+void velocity_count()
+{ 
+  rpm = 100.0 / double(millis() - tt);
+  tt = millis();
+  if (spos >= 12)
+    razvorot++;
+  if (spos <= -12)
+    razvorot--;
+  
 }
 
 long int tt_stop = 0;
-double kp_sp = 1.5;
-//double ki_sp = 0.1;
-double kd_sp = 15;
+double kp_sp = 2;
+double ki_sp = 0;
+double kd_sp = 10;
 double errold_sp = 0;
-//double integral_sp = 0;
+double integral_sp = 0;
 int err_sp = 0;
 double z = 0;
 void speed_control()
 {
   
-  //integral_sp = 0.5*integral_sp+ki_sp*(sp - rpm);
-  err_sp = (kp_sp*(sp - rpm) + kd_sp*(sp - rpm - errold_sp));  
+  integral_sp = 0.5*integral_sp+ki_sp*(sp - rpm);
+  err_sp = (kp_sp*(sp - rpm) + integral_sp + kd_sp*(sp - rpm - errold_sp));  
   errold_sp = (sp - rpm);
 
   
@@ -209,15 +184,15 @@ void speed_control()
     {
       if(err_sp < 0)
       {
-        z = NEUTRAL + err_sp/0.9; //(err_sp * (NEUTRAL-REVERSE) / ((f_sp-t_sp)*kp_sp + (f_sp-t_sp)*kd_sp));
-        if (z<REVERSE || rpm > f_f_sp-20 )
+        z = NEUTRAL + err_sp*5; //(err_sp * (NEUTRAL-REVERSE) / ((f_sp-t_sp)*kp_sp + (f_sp-t_sp)*kd_sp));
+        if(z < REVERSE)
           motor.write(REVERSE);
-       else
-          motor.write(REVERSE);
+        else
+          motor.write(z);
       }
       else
       {
-        z = 100 + err_sp/7;//((err_sp *5)/(f_sp*kp_sp + f_sp*kd_sp));
+        z = 99 + err_sp;//((err_sp *5)/(f_sp*kp_sp + f_sp*kd_sp));
         if(z > 105)
           motor.write(105);
         else
@@ -341,7 +316,7 @@ void display_print()
 
 
 int stop_time = 0;
-int razvorot = 0;
+
 double kp = 0.011;
 double kd = 0.71;
 //------------------------------------------------------------------------------------------------------------------------
@@ -359,10 +334,13 @@ void loop() {
     //serial_print();
     //display_print();
 
-    if (razvorot > 40 || rpm < 6)
+    if (millis() - tt > 500)
+      rpm = 0;
+
+    if (razvorot > 80 || rpm < 6)
       razvorot = 0;
 
-    if (razvorot < -220) {
+    if (razvorot < -320) {
       s_pos(-30);
       motor.write(NEUTRAL);
       delay(50);
