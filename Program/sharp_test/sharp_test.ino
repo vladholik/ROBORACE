@@ -43,53 +43,53 @@ int sh_to_mm(int port, double analog_data)
   switch (port)
   {
     case 1:
-      l_45 = 75834 * pow(analog_data, -1.341)* 10;
-      if (l_45 > 1400)
-        l_45 = 1400;
-      if (l_45 < 110)
-        l_45 = 110;
+      l_45 = analog_data;//75834 * pow(analog_data, -1.341)* 10;
+      if (l_45 > 2000)
+        l_45 = 2000;
+      if (l_45 < 0)
+        l_45 = 0;
       break;
 
     case 0:
-    l_90 = 75834 * pow(analog_data, -1.341)* 10;
-      if (l_90 > 1400)
-        l_90 = 1400;
-      if (l_90 < 110)
-        l_90 = 110;
+    l_90 = analog_data;//75834 * pow(analog_data, -1.341)* 10;
+      if (l_90 > 2000)
+        l_90 = 2000;
+      if (l_90 < 0)
+        l_90 = 0;
       break;
 
     case 2:
-     l_0 = 75834 * pow(analog_data, -1.341)* 10;
-      if (l_0 > 1400)
-        l_0 = 1400;
-      if (l_0 < 110)
-        l_0 = 110;
+     l_0 = analog_data;//75834 * pow(analog_data, -1.341)* 10;
+      if (l_0 > 2000)
+        l_0 = 2000;
+      if (l_0 < 0)
+        l_0 = 0;
       break;
 
     case 3:
 
-      r_0 = 75834 * pow(analog_data, -1.341)* 10;
-      if (r_0 > 1400)
-        r_0 = 1400;
-      if (r_0 < 110)
-        r_0 = 110;
+      r_0 = analog_data;//75834 * pow(analog_data, -1.341)* 10;
+      if (r_0 > 2000)
+        r_0 = 2000;
+      if (r_0 < 0)
+        r_0 = 0;
       break;
 
     case 4:
-     r_45 = 75834 * pow(analog_data, -1.341)* 10;
-      if (r_45 > 1400)
-        r_45 = 1400;
-      if (r_45 < 110)
-        r_45 = 110;
+     r_45 = analog_data;//75834 * pow(analog_data, -1.341)* 10;
+      if (r_45 > 2000)
+        r_45 = 2000;
+      if (r_45 < 0)
+        r_45 = 0;
       break;
 
 
     case 5:
-      r_90 = 75834 * pow(analog_data, -1.341)* 10;
-      if (r_90 > 1400)
-        r_90 = 1400;
-      if (r_90 < 110)
-        r_90 = 110;
+      r_90 = analog_data;//75834 * pow(analog_data, -1.341)* 10;
+      if (r_90 > 2000)
+        r_90 = 2000;
+      if (r_90 < 0)
+        r_90 = 0;
       break;
 
 
@@ -190,11 +190,24 @@ void setup() {
 
 }
 
+double av[6] = {0, 0, 0, 0, 0, 0};
 void loop() {
-
-  sharp_read();
-  Serial.print(l_90); Serial.print(" "); Serial.print(l_45); Serial.print(" "); Serial.print(l_0); Serial.print(" ");
-  Serial.print(r_0); Serial.print(" "); Serial.print(r_45); Serial.print(" "); Serial.println(r_90);
+  for(int i = 0; i < 1000; i++)
+  {
+    sharp_read();
+    av[0] += l_90;
+    av[1] += l_45;
+    av[2] += l_0;
+    av[3] += r_0;
+    av[4] += r_45;
+    av[5] += r_90;
+  }
+  for (int i = 0; i<6; i++)
+  {
+    Serial.print(av[i]/1000); Serial.print(" ");
+    av[i] = 0;
+  }
+   Serial.println(" ");
 
 
 

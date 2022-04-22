@@ -18,6 +18,10 @@
 #define S0 96
 
 #define ENCODER_PORT PIN_PD2
+#define ANALOG_READ_PORT PIN_PC1
+#define INTEGRAL_DATA_3 PIN_PD7
+#define INTEGRAL_DATA_2 PIN_PB0
+#define INTEGRAL_DATA_1 PIN_PB1
 
 VL53L0X tof_0, tof_1, tof_2, tof_3, tof_4, tof_5;
 Servo servo, motor;  // создадим объект сервопривода и мотора
@@ -46,6 +50,144 @@ double f_sp = 22;
 double f_f_sp = 27;
 int razvorot = 0;
 
+
+int sh_to_mm(int port, double analog_data)
+{
+  int i;
+  double tga;
+
+
+  switch (port)
+  {
+    case 1:
+      l_45 = 75834 * pow(analog_data, -1.341)* 10;
+      if (l_45 > 1400)
+        l_45 = 1400;
+      if (l_45 < 110)
+        l_45 = 110;
+      break;
+
+    case 0:
+    l_90 = 75834 * pow(analog_data, -1.341)* 10;
+      if (l_90 > 1400)
+        l_90 = 1400;
+      if (l_90 < 110)
+        l_90 = 110;
+      break;
+
+    case 2:
+     l_0 = 75834 * pow(analog_data, -1.341)* 10;
+      if (l_0 > 1400)
+        l_0 = 1400;
+      if (l_0 < 110)
+        l_0 = 110;
+      break;
+
+    case 3:
+
+      r_0 = 75834 * pow(analog_data, -1.341)* 10;
+      if (r_0 > 1400)
+        r_0 = 1400;
+      if (r_0 < 110)
+        r_0 = 110;
+      break;
+
+    case 4:
+     r_45 = 75834 * pow(analog_data, -1.341)* 10;
+      if (r_45 > 1400)
+        r_45 = 1400;
+      if (r_45 < 110)
+        r_45 = 110;
+      break;
+
+
+    case 5:
+      r_90 = 75834 * pow(analog_data, -1.341)* 10;
+      if (r_90 > 1400)
+        r_90 = 1400;
+      if (r_90 < 110)
+        r_90 = 110;
+      break;
+
+
+  }
+}
+
+void sharp_read()
+{
+  ANALOG_MUX(3);
+  sh_to_mm(0, analogRead(ANALOG_READ_PORT));
+
+  ANALOG_MUX(2);
+  sh_to_mm(1, analogRead(ANALOG_READ_PORT));
+
+  ANALOG_MUX(1);
+  sh_to_mm(2, analogRead(ANALOG_READ_PORT));
+
+  ANALOG_MUX(0);
+  sh_to_mm(3, analogRead(ANALOG_READ_PORT));
+
+  ANALOG_MUX(6);
+  sh_to_mm(4, analogRead(ANALOG_READ_PORT));
+
+  ANALOG_MUX(7);
+  sh_to_mm(5, analogRead(ANALOG_READ_PORT));
+}
+
+void ANALOG_MUX(uint8_t port)
+{
+  switch (port)
+  {
+    case 0:
+      digitalWrite(INTEGRAL_DATA_1, 0);
+      digitalWrite(INTEGRAL_DATA_2, 0);
+      digitalWrite(INTEGRAL_DATA_3, 0);
+      break;
+
+    case 1:
+      digitalWrite(INTEGRAL_DATA_1, 0);
+      digitalWrite(INTEGRAL_DATA_2, 0);
+      digitalWrite(INTEGRAL_DATA_3, 1);
+      break;
+
+    case 2:
+      digitalWrite(INTEGRAL_DATA_1, 0);
+      digitalWrite(INTEGRAL_DATA_2, 1);
+      digitalWrite(INTEGRAL_DATA_3, 0);
+      break;
+
+    case 3:
+      digitalWrite(INTEGRAL_DATA_1, 0);
+      digitalWrite(INTEGRAL_DATA_2, 1);
+      digitalWrite(INTEGRAL_DATA_3, 1);
+      break;
+
+    case 4:
+      digitalWrite(INTEGRAL_DATA_1, 1);
+      digitalWrite(INTEGRAL_DATA_2, 0);
+      digitalWrite(INTEGRAL_DATA_3, 0);
+      break;
+
+    case 5:
+      digitalWrite(INTEGRAL_DATA_1, 1);
+      digitalWrite(INTEGRAL_DATA_2, 0);
+      digitalWrite(INTEGRAL_DATA_3, 1);
+      break;
+
+    case 6:
+      digitalWrite(INTEGRAL_DATA_1, 1);
+      digitalWrite(INTEGRAL_DATA_2, 1);
+      digitalWrite(INTEGRAL_DATA_3, 0);
+      break;
+
+    case 7:
+      digitalWrite(INTEGRAL_DATA_1, 1);
+      digitalWrite(INTEGRAL_DATA_2, 1);
+      digitalWrite(INTEGRAL_DATA_3, 1);
+      break;
+  }
+
+}
 
 bool setup_6_tofs(int timeout) {
 
@@ -135,7 +277,11 @@ void setup() {
 
   servo.attach(PIN_PD4);
   motor.attach(PIN_PB2);
-  //pinMode(ENCODER_PORT, INPUT);
+
+  pinMode(ANALOG_READ_PORT, INPUT);
+  pinMode(INTEGRAL_DATA_1, OUTPUT);
+  pinMode(INTEGRAL_DATA_2, OUTPUT);
+  pinMode(INTEGRAL_DATA_3, OUTPUT);
   attachInterrupt(0, velocity_count, FALLING);
 
 
@@ -319,18 +465,22 @@ int stop_time = 0;
 
 double kp = 0.011;
 double kd = 0.71;
+long int last_it = 0;
 //------------------------------------------------------------------------------------------------------------------------
 
 void loop() {
 
-  s_pos(0);
-  delay(3000);
-
+  
+  while (millis()<5000)
+    s_pos(0);
 
   while (1) {
+    Serial.println(1000/(millis()-last_it));
+    last_it = millis();
+    sharp_read();
     tof_read();
     speed_control();
-    serial_print();
+    //serial_print();
     //display_print();
 
     if (millis() - tt > 500)
